@@ -128,3 +128,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Kontrolownik Zakupów API',
+    'DESCRIPTION': 'API for managing products in the inventory system.',
+    'VERSION': '1.0.0',
+}
