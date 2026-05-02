@@ -9,7 +9,7 @@ function App() {
             <div className="min-h-screen flex justify-center items-start pt-8">
                 <Routes>
                     <Route path="/" element={<MainList />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/product/:slug" element={<ProductDetail />} />
 
                 </Routes>
             </div>
