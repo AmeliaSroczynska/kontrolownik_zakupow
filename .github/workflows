@@ -1,0 +1,61 @@
+name: Kontrolownik Zakupów CI/CD
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  backend-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Pobranie kodu repozytorium
+      uses: actions/checkout@v4
+
+    - name: Konfiguracja środowiska Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Instalacja zależności backendu
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8
+        pip install -r requirements.txt
+
+    - name: Weryfikacja jakości kodu (Flake8)
+      working-directory: ./backend
+      # Linter sprawdza błędy składniowe i zgodność z PEP8.
+      # Parametr --exit-zero sprawia, że drobne błędy nie "wywalą" całego procesu (bezpiecznik na start)
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Uruchomienie testów jednostkowych (Django)
+      working-directory: ./backend
+      run: |
+        python manage.py test
+
+  # ==========================================
+  # ZADANIE 2: FRONTEND (React, ESLint)
+  # ==========================================
+  frontend-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Pobranie kodu repozytorium
+      uses: actions/checkout@v4
+
+    - name: Konfiguracja środowiska Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Instalacja zależności frontendu
+      working-directory: ./frontend
+      run: npm install
+
+    - name: Weryfikacja jakości kodu (ESLint)
+      working-directory: ./frontend
+      run: npm run lint
