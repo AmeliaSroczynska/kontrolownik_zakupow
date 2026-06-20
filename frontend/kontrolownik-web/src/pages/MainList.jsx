@@ -59,8 +59,6 @@ const MainList = () => {
                 <span>Made with</span>
                 <Heart size={16} className="text-[#FF3B5C] fill-[#FF3B5C]" />
                 <div className="flex items-center gap-1">
-                    <span>by</span>
-                    <span className="font-extrabold text-zinc-800">Amelia</span>
                     <span>© 2026</span>
                 </div>
             </div>
