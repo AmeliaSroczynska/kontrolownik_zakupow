@@ -40,18 +40,18 @@ jobs:
   frontend-pipeline:
     runs-on: ubuntu-latest
     steps:
-    - name: Pobranie kodu repozytorium
-      uses: actions/checkout@v4
+      - name: Pobranie kodu repozytorium
+        uses: actions/checkout@v4
 
-    - name: Konfiguracja środowiska Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Konfiguracja środowiska Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Instalacja zależności frontendu
-      working-directory: ./frontend
-      run: npm install
+      - name: Instalacja zależności frontendu
+        working-directory: ./frontend/kontrolownik-web
+        run: npm install
 
-    - name: Weryfikacja jakości kodu (ESLint)
-      working-directory: ./frontend
-      run: npm run lint
+      - name: Weryfikacja jakości kodu (ESLint)
+        working-directory: ./frontend/kontrolownik-web
+        run: npm run lint
