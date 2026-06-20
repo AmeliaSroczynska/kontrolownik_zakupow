@@ -6,4 +6,3 @@ from .models import Product
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'quantity', 'unit', 'minimum_quantity')
     prepopulated_fields = {'slug': ('name',)}
-
