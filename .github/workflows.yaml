@@ -27,8 +27,7 @@ jobs:
 
     - name: Weryfikacja jakości kodu (Flake8)
       working-directory: ./backend
-      # Linter sprawdza błędy składniowe i zgodność z PEP8.
-      # Parametr --exit-zero sprawia, że drobne błędy nie "wywalą" całego procesu (bezpiecznik na start)
+
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
@@ -38,9 +37,6 @@ jobs:
       run: |
         python manage.py test
 
-  # ==========================================
-  # ZADANIE 2: FRONTEND (React, ESLint)
-  # ==========================================
   frontend-pipeline:
     runs-on: ubuntu-latest
     steps:

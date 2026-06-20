@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainList from './pages/MainList.jsx';
 import ProductDetail from './pages/ProductDetail.jsx';
