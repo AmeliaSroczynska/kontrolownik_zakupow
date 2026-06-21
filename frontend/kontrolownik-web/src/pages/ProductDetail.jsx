@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Minus } from 'lucide-react';
+import { getMockProduct } from '../api/mockData';
 
 const colorMap = {
     'Ser': 'bg-[#F2C953]',
@@ -15,15 +16,32 @@ const ProductDetail = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const [product, setProduct] = useState(null);
+    const [offline, setOffline] = useState(false);
 
     useEffect(() => {
         fetch(`http://127.0.0.1:8000/api/products/${slug}/`)
             .then(res => res.json())
-            .then(data => setProduct(data))
-            .catch(err => console.error(err));
+            .then(data => {
+                setProduct(data);
+                setOffline(false);
+            })
+            .catch(err => {
+                console.error('Backend unreachable, using mock data', err);
+                setProduct(getMockProduct(slug));
+                setOffline(true);
+            });
     }, [slug]);
 
     const handleAction = async (endpoint) => {
+        // Offline: update quantity locally instead of calling the backend.
+        if (offline) {
+            setProduct(prev => prev && {
+                ...prev,
+                quantity: Math.max(0, prev.quantity + (endpoint === 'add' ? 1 : -1)),
+            });
+            return;
+        }
+
         try {
             const res = await fetch(`http://127.0.0.1:8000/api/products/${slug}/${endpoint}/`, {
                 method: 'POST',
@@ -33,7 +51,12 @@ const ProductDetail = () => {
                 setProduct(data);
             }
         } catch (err) {
-            console.error(err);
+            console.error('Backend unreachable, updating locally', err);
+            setOffline(true);
+            setProduct(prev => prev && {
+                ...prev,
+                quantity: Math.max(0, prev.quantity + (endpoint === 'add' ? 1 : -1)),
+            });
         }
     };
 

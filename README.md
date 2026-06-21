@@ -71,6 +71,18 @@ npm run build    # build produkcyjny
 npm run lint     # ESLint
 ```
 
+### Widoki
+
+- `/` – lista produktów (`MainList`)
+- `/product/:slug` – szczegóły produktu, dodawanie / odejmowanie
+- `/fridge` – **wizualizacja 3D lodówki** (Three.js / React Three Fiber);
+  każda półka pokazuje produkt, a liczba „pudełek" odzwierciedla aktualny stan.
+  Scena jest proceduralna (bez zewnętrznych modeli), zasilana danymi
+  z `src/api/mockData.js`. Drzwi otwierają się/zamykają na klik (lub przyciskiem),
+  na froncie jest magnes z logo samorządu, a kliknięcie produktu otwiera panel
+  +/− w scenie. Nowe kategorie układają się w siatkę kolumn, a kształt bryły
+  dobierany jest po typie jednostki (`src/utils/productMeta.js`).
+
 ## CI/CD
 
 Workflow `.github/workflows/ci-cd.yaml` przy każdym push / PR na `main` lub

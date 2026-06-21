@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Box } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { mockProducts } from '../api/mockData';
 
 const colorMap = {
     'Ser': 'bg-[#F2C953]',
@@ -18,13 +19,19 @@ const MainList = () => {
         fetch('http://127.0.0.1:8000/api/products/')
             .then(res => res.json())
             .then(data => setProducts(data))
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error('Backend unreachable, using mock data', err);
+                setProducts(mockProducts);
+            });
     }, []);
 
     return (
         <div className="w-full max-w-[360px] bg-white rounded-5xl p-6 shadow-2xl min-h-[720px] flex flex-col overflow-hidden font-sans">
             <div className="flex justify-between items-center mb-2 px-2 mt-2">
                 <img src="/logo-bird.svg" alt="logo" className="w-10 h-10" />
+                <Link to="/fridge" title="Lodówka 3D" className="text-zinc-800 active:scale-90 transition-transform">
+                    <Box size={28} strokeWidth={2.5} />
+                </Link>
                 <img src="/logo-bird.svg" alt="logo" className="w-10 h-10 scale-x-[-1]" />
             </div>
 
