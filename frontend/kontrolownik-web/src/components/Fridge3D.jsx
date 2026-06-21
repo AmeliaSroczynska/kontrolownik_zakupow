@@ -3,6 +3,8 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { normalizeProducts } from '../utils/productMeta.js';
+import { shapeFactory } from '../domain/ProductShapeFactory.js';
+import { InventoryStore } from '../domain/InventoryStore.js';
 
 // Wczytanie tekstury bez zawieszania sceny (Suspense) – box renderuje się od
 // razu w kolorze marki, a zdjęcie produktu pojawia się gdy się załaduje.
@@ -106,62 +108,42 @@ function LabeledBox({ texture, hex, args, position = [0, 0, 0], wrap = false }) 
     );
 }
 
-// Bryła dobierana po TYPIE jednostki (product.shape), nie po slugu – dzięki temu
-// dowolna nowa kategoria z backendu dostaje sensowny kształt. Nieznany typ →
-// generyczne owinięte pudło.
-function ProductShape({ product, texture }) {
-    const hex = product.hex;
-    switch (product.shape) {
-        case 'carton': // karton z daszkiem (np. mleko)
-            return (
-                <group>
-                    <LabeledBox texture={texture} hex={hex} args={[0.3, 0.34, 0.3]} position={[0, 0.17, 0]} wrap />
-                    <mesh position={[0, 0.4, 0]} castShadow>
-                        <boxGeometry args={[0.3, 0.12, 0.06]} />
-                        <meshStandardMaterial color={hex} roughness={0.45} />
-                    </mesh>
-                    <mesh position={[0, 0.37, 0]} castShadow>
-                        <cylinderGeometry args={[0.001, 0.21, 0.16, 4, 1, false, Math.PI / 4]} />
-                        <meshStandardMaterial color={hex} roughness={0.45} />
-                    </mesh>
-                </group>
-            );
-        case 'bottle': // butelka: korpus owinięty etykietą + szyjka + nakrętka
-            return (
-                <group>
-                    <mesh position={[0, 0.16, 0]} castShadow>
-                        <cylinderGeometry args={[0.13, 0.15, 0.32, 32]} />
-                        <WrapMaterial texture={texture} hex={hex} roughness={0.35} />
-                    </mesh>
-                    <mesh position={[0, 0.37, 0]} castShadow>
-                        <cylinderGeometry args={[0.05, 0.1, 0.12, 24]} />
-                        <meshStandardMaterial color={hex} roughness={0.3} />
-                    </mesh>
-                    <mesh position={[0, 0.45, 0]} castShadow>
-                        <cylinderGeometry args={[0.055, 0.055, 0.06, 24]} />
-                        <meshStandardMaterial color="#b03030" roughness={0.4} />
-                    </mesh>
-                </group>
-            );
-        case 'jar': // słoik/puszka (np. kawa, kapsułki): korpus owinięty + wieczko
-            return (
-                <group>
-                    <mesh position={[0, 0.17, 0]} castShadow>
-                        <cylinderGeometry args={[0.15, 0.15, 0.34, 32]} />
-                        <WrapMaterial texture={texture} hex={hex} roughness={0.4} />
-                    </mesh>
-                    <mesh position={[0, 0.37, 0]} castShadow>
-                        <cylinderGeometry args={[0.155, 0.155, 0.07, 32]} />
-                        <meshStandardMaterial color="#5a4632" roughness={0.4} />
-                    </mesh>
-                </group>
-            );
-        case 'slices': // talia plasterków – niski, szeroki box z owinięciem
-            return <LabeledBox texture={texture} hex={hex} args={[0.38, 0.16, 0.3]} position={[0, 0.09, 0]} wrap />;
-        case 'box': // paczka/pudełko (np. kawałki, tosty) – owinięte zdjęciem
-        default:
-            return <LabeledBox texture={texture} hex={hex} args={[0.34, 0.4, 0.28]} position={[0, 0.2, 0]} wrap />;
+// Renderer pojedynczej CZĘŚCI bryły opisanej deklaratywnie przez strategię
+// kształtu (patrz domain/shapeStrategies.js). Zamienia opis { kind, args,
+// position, material } na konkretny mesh Three.js.
+function ShapePart({ part, texture }) {
+    const { kind, args, position, material } = part;
+    const geom = kind === 'box'
+        ? <boxGeometry args={args} />
+        : <cylinderGeometry args={args} />; // 'cyl' i 'cone' to ten sam geometr z różnymi promieniami
+
+    // Box z etykietą obsługujemy istniejącym komponentem (multi-material).
+    if (kind === 'box' && material.type === 'label') {
+        return <LabeledBox texture={texture} hex={material.hex} args={args} position={position} wrap={material.wrap} />;
     }
+
+    return (
+        <mesh position={position} castShadow>
+            {geom}
+            {material.type === 'wrap'
+                ? <WrapMaterial texture={texture} hex={material.hex} roughness={material.roughness} />
+                : <meshStandardMaterial color={material.hex} roughness={material.roughness ?? 0.45} />}
+        </mesh>
+    );
+}
+
+// Bryła produktu budowana przez WZORZEC Strategy + Factory: fabryka dobiera
+// strategię po typie jednostki (`product.shape`), strategia opisuje części,
+// a `ShapePart` je renderuje. Brak `switch` – nowy kształt = nowa klasa.
+function ProductShape({ product, texture }) {
+    const parts = useMemo(() => shapeFactory.create(product).buildParts(product), [product]);
+    return (
+        <group>
+            {parts.map((part, i) => (
+                <ShapePart key={i} part={part} texture={texture} />
+            ))}
+        </group>
+    );
 }
 
 // Produkty stojące na jednej półce – rządek brył, którego długość odzwierciedla
@@ -524,6 +506,7 @@ function Scene({ products, quantities, onAdd, onTake, doorOpen, onToggleDoor, pr
                 makeDefault
                 enablePan={false}
                 enableZoom
+                zoomToCursor
                 zoomSpeed={0.9}
                 rotateSpeed={0.85}
                 minDistance={3}
@@ -560,12 +543,23 @@ export default function Fridge3D({ products: rawProducts }) {
     // gwarantowane pola hex/image/shape/isPercent używane przez scenę.
     const products = useMemo(() => normalizeProducts(rawProducts), [rawProducts]);
 
-    // Lokalny stan ilości (mock) – zmieniany panelem +/− w scenie.
-    const [quantities, setQuantities] = useState(() =>
-        Object.fromEntries(products.map((p) => [p.id, p.quantity])),
-    );
-    const addOne = (id) => setQuantities((q) => ({ ...q, [id]: (q[id] ?? 0) + 1 }));
-    const takeOne = (id) => setQuantities((q) => ({ ...q, [id]: Math.max(0, (q[id] ?? 0) - 1) }));
+    // WZORZEC Observer: stanem ilości zarządza InventoryStore (Subject). React
+    // jest jego obserwatorem – `quantities` to migawka, którą store odświeża po
+    // każdej zmianie. Panel +/− woła metody store'a, nie modyfikuje stanu wprost.
+    const store = useMemo(() => new InventoryStore(products), [products]);
+    const [quantities, setQuantities] = useState(() => store.snapshot());
+    useEffect(() => {
+        // subscribe od razu wypycha bieżącą migawkę (synchronizacja przy montażu)
+        const unsubscribe = store.subscribe(setQuantities);
+        // drugi obserwator: alert niskiego stanu (analogiczny do sygnałów Django)
+        const unsubscribeLow = store.onLowStock(({ id, quantity, minimum }) => {
+            const p = products.find((x) => x.id === id);
+            console.warn(`[Lodówka] Niski stan: ${p?.name ?? id} = ${quantity} (min ${minimum})`);
+        });
+        return () => { unsubscribe(); unsubscribeLow(); };
+    }, [store, products]);
+    const addOne = (id) => store.add(id);
+    const takeOne = (id) => store.take(id);
 
     useLayoutEffect(() => {
         const el = wrapRef.current;
