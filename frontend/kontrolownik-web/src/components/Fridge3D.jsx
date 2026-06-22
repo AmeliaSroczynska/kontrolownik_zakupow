@@ -443,23 +443,31 @@ function FridgeBody({ height, totalW, cols, colW, colGap, doorOpen, onToggleDoor
 // pivot orbity w środku lodówki (świat y=0), żeby obrót kręcił się wokół bryły.
 // Robi to raz (gdy kontrolki są już zamontowane); nie nadpisuje ruchu usera.
 function CameraRig({ height, totalW, controlsRef }) {
-    const { camera } = useThree();
+    const { camera, invalidate } = useThree();
     useEffect(() => {
         let raf;
+        let tries = 0;
         const frame = () => {
             const ctrls = controlsRef.current;
-            if (!ctrls) { raf = requestAnimationFrame(frame); return; } // czekaj na OrbitControls
-            const span = Math.max(height, totalW * 0.9);
-            const dist = span * 1.35 + 2.8;
-            camera.position.set(dist * 0.5, height * 0.18, dist * 0.85);
-            camera.far = dist * 4 + 50;
-            camera.updateProjectionMatrix();
-            ctrls.target.set(0, 0, 0);
-            ctrls.update();
+            // Powtarzamy kadrowanie przez kilka klatek: przy nawigacji klient-side
+            // OrbitControls montują się z opóźnieniem, a ich wewnętrzny stan musi
+            // się ustabilizować – inaczej pierwsza klatka bywa pusta (czarna).
+            if (ctrls) {
+                const span = Math.max(height, totalW * 0.9);
+                const dist = span * 1.35 + 2.8;
+                camera.position.set(dist * 0.5, height * 0.18, dist * 0.85);
+                camera.far = dist * 4 + 50;
+                camera.updateProjectionMatrix();
+                ctrls.target.set(0, 0, 0);
+                ctrls.update();
+                invalidate(); // wymuś przerysowanie
+                tries += 1;
+            }
+            if (tries < 5) raf = requestAnimationFrame(frame);
         };
         raf = requestAnimationFrame(frame);
         return () => cancelAnimationFrame(raf);
-    }, [camera, height, totalW, controlsRef]);
+    }, [camera, invalidate, height, totalW, controlsRef]);
     return null;
 }
 

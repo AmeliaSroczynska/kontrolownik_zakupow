@@ -62,7 +62,15 @@ const MainList = () => {
                 })}
             </div>
 
-            <div className="mt-auto pb-8 flex items-center justify-center gap-1.5 text-zinc-400 text-sm font-medium">
+            <Link
+                to="/fridge"
+                className="mt-auto mx-2 mb-4 flex items-center justify-center gap-2 bg-zinc-900 text-white rounded-3xl py-4 text-lg font-extrabold shadow-lg transition-transform active:scale-95 no-underline"
+            >
+                <Box size={22} strokeWidth={2.5} />
+                <span>Zobacz lodówkę 3D</span>
+            </Link>
+
+            <div className="pb-8 flex items-center justify-center gap-1.5 text-zinc-400 text-sm font-medium">
                 <span>Made with</span>
                 <Heart size={16} className="text-[#FF3B5C] fill-[#FF3B5C]" />
                 <div className="flex items-center gap-1">
