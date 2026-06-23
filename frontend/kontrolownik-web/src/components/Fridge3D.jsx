@@ -46,6 +46,21 @@ function computeLayout(count) {
     return { cols, rows, colW, colGap, totalW, height, placements };
 }
 
+const errorLabelStyle = {
+    background: '#ffffff',
+    borderTop: '5px solid #ff5a5a',
+    borderRadius: '16px',
+    padding: '16px 20px',
+    width: 200,
+    textAlign: 'center',
+    fontFamily: 'Onest, sans-serif',
+    fontWeight: 800,
+    fontSize: '15px',
+    color: '#18181b',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.45)',
+    userSelect: 'none',
+};
+
 const toggleStyle = {
     position: 'absolute',
     top: '12px',
@@ -172,7 +187,7 @@ function ProductRow({ product, y, quantity, onAdd, onTake, visible }) {
                             </span>
                             <button style={stepBtn} onClick={(e) => { e.stopPropagation(); onAdd(); }}>+</button>
                         </div>
-                        <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>{product.unit}</div>
+                        <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>{product.unitText}</div>
                         <button style={closeBtn} onClick={(e) => { e.stopPropagation(); setOpen(false); }}>zamknij</button>
                     </div>
                 ) : (
@@ -183,7 +198,7 @@ function ProductRow({ product, y, quantity, onAdd, onTake, visible }) {
                         onPointerOut={() => setHovered(false)}
                     >
                         <strong>{product.name}</strong>
-                        <span>{quantity} {product.unit}</span>
+                        <span>{quantity} {product.unitText}</span>
                     </div>
                 )}
             </Html>
@@ -391,33 +406,37 @@ function FridgeBody({ height, totalW, cols, colW, colGap, doorOpen, onToggleDoor
 }
 
 function CameraRig({ height, totalW, controlsRef }) {
-    const { camera, invalidate } = useThree();
+    const { camera, invalidate, size } = useThree();
     useEffect(() => {
         let raf;
-        let tries = 0;
+        const start = performance.now();
+        let framed = 0;
         const frame = () => {
             const ctrls = controlsRef.current;
-            if (ctrls) {
+            if (ctrls && size.width > 0 && size.height > 0) {
                 const span = Math.max(height, totalW * 0.9);
                 const dist = span * 1.35 + 2.8;
+                camera.aspect = size.width / size.height;
                 camera.position.set(dist * 0.5, height * 0.18, dist * 0.85);
                 camera.far = dist * 4 + 50;
                 camera.updateProjectionMatrix();
                 ctrls.target.set(0, 0, 0);
                 ctrls.update();
                 invalidate();
-                tries += 1;
+                framed += 1;
             }
-            if (tries < 5) raf = requestAnimationFrame(frame);
+            if (framed < 4 || performance.now() - start < 1200) {
+                raf = requestAnimationFrame(frame);
+            }
         };
         raf = requestAnimationFrame(frame);
         return () => cancelAnimationFrame(raf);
-    }, [camera, invalidate, height, totalW, controlsRef]);
+    }, [camera, invalidate, size.width, size.height, height, totalW, controlsRef]);
     return null;
 }
 
-function Scene({ products, quantities, onAdd, onTake, doorOpen, onToggleDoor, productsVisible }) {
-    const layout = useMemo(() => computeLayout(products.length), [products.length]);
+function Scene({ products, quantities, onAdd, onTake, doorOpen, onToggleDoor, productsVisible, error }) {
+    const layout = useMemo(() => computeLayout(Math.max(products.length, error ? 3 : 0)), [products.length, error]);
     const { height, totalW, cols, colW, colGap, placements } = layout;
     const controlsRef = useRef();
 
@@ -434,6 +453,14 @@ function Scene({ products, quantities, onAdd, onTake, doorOpen, onToggleDoor, pr
                     height={height} totalW={totalW} cols={cols} colW={colW} colGap={colGap}
                     doorOpen={doorOpen} onToggleDoor={onToggleDoor}
                 />
+                {error && productsVisible && (
+                    <Html position={[0, height / 2, INNER_D / 2 - 0.15]} center distanceFactor={6} zIndexRange={[30, 0]}>
+                        <div style={errorLabelStyle}>
+                            <div style={{ fontSize: 22, marginBottom: 6 }}>⚠️</div>
+                            Brak połączenia z bazą danych
+                        </div>
+                    </Html>
+                )}
                 {products.map((p, i) => {
                     const { x, y } = placements[i];
                     return (
@@ -473,10 +500,10 @@ function Scene({ products, quantities, onAdd, onTake, doorOpen, onToggleDoor, pr
     );
 }
 
-export default function Fridge3D({ products: rawProducts }) {
+export default function Fridge3D({ products: rawProducts, error = false }) {
     const wrapRef = useRef(null);
     const [size, setSize] = useState(null);
-    const [doorOpen, setDoorOpen] = useState(false); // drzwi: domyślnie zamknięte
+    const [doorOpen, setDoorOpen] = useState(error);
 
     const [openedEnough, setOpenedEnough] = useState(false);
     useEffect(() => {
@@ -536,6 +563,7 @@ export default function Fridge3D({ products: rawProducts }) {
                         onAdd={addOne} onTake={takeOne}
                         doorOpen={doorOpen} onToggleDoor={() => setDoorOpen((d) => !d)}
                         productsVisible={productsVisible}
+                        error={error}
                     />
                 </Canvas>
             )}

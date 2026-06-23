@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Heart, Box } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { mockProducts } from '../api/mockData';
+import { fetchProducts } from '../api/client';
 
 const colorMap = {
     'Ser': 'bg-[#F2C953]',
@@ -16,13 +16,9 @@ const MainList = () => {
     const [products, setProducts] = useState([]);
 
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/products/')
-            .then(res => res.json())
-            .then(data => setProducts(data))
-            .catch(err => {
-                console.error('Backend unreachable, using mock data', err);
-                setProducts(mockProducts);
-            });
+        fetchProducts()
+            .then(setProducts)
+            .catch(() => setProducts([]));
     }, []);
 
     return (

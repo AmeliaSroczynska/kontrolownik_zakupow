@@ -1,11 +1,19 @@
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Fridge3D from '../components/Fridge3D.jsx';
-import { products } from '../api/mockData.js';
+import { fetchProducts } from '../api/client';
 
 const FridgeView = () => {
     const navigate = useNavigate();
+    const [products, setProducts] = useState([]);
+    const [status, setStatus] = useState('loading');
+
+    useEffect(() => {
+        fetchProducts()
+            .then((data) => { setProducts(data); setStatus('ok'); })
+            .catch(() => { setProducts([]); setStatus('error'); });
+    }, []);
 
     return (
         <div className="w-full max-w-[360px] bg-zinc-900 rounded-5xl shadow-2xl min-h-[720px] flex flex-col overflow-hidden font-sans relative">
@@ -18,9 +26,19 @@ const FridgeView = () => {
             </div>
 
             <div className="relative h-[600px] w-full">
-                <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-white font-bold">Ładowanie sceny…</div>}>
-                    <Fridge3D products={products} />
-                </Suspense>
+                {status === 'loading' && (
+                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold">Ładowanie produktów…</div>
+                )}
+                {status === 'ok' && (
+                    <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-white font-bold">Ładowanie sceny…</div>}>
+                        <Fridge3D products={products} />
+                    </Suspense>
+                )}
+                {status === 'error' && (
+                    <Suspense fallback={null}>
+                        <Fridge3D products={[]} error />
+                    </Suspense>
+                )}
             </div>
 
             <div className="absolute bottom-4 inset-x-0 text-center text-zinc-400 text-xs font-medium pointer-events-none">
