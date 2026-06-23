@@ -292,7 +292,7 @@ const DOOR_TH = 0.1;                  // grubość drzwi
 function FridgeDoor({ height, doorW, hingeX, frontZ, open, onToggle }) {
     const ref = useRef();
     const [hovered, setHovered] = useState(false);
-    const logo = useProductTexture('/logo-wit.svg');
+    const logo = useProductTexture('/logo-wit.png');
     const doorH = height + WALL * 2;
 
     useFrame(() => {
