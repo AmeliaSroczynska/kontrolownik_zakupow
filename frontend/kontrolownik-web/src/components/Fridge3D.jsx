@@ -6,8 +6,6 @@ import { normalizeProducts } from '../utils/productMeta.js';
 import { shapeFactory } from '../domain/ProductShapeFactory.js';
 import { InventoryStore } from '../domain/InventoryStore.js';
 
-// Wczytanie tekstury bez zawieszania sceny (Suspense) – box renderuje się od
-// razu w kolorze marki, a zdjęcie produktu pojawia się gdy się załaduje.
 function useProductTexture(url) {
     const [texture, setTexture] = useState(null);
     useEffect(() => {
@@ -21,26 +19,20 @@ function useProductTexture(url) {
     return texture;
 }
 
-// --- Wymiary wnętrza lodówki (jednostki sceny) ---
 const INNER_W = 2.4;     // szerokość wnętrza
 const INNER_D = 1.4;     // głębokość wnętrza
 const WALL = 0.12;       // grubość ścianek
 const SHELF_GAP = 1.05;  // odstęp między półkami
 
-// Ile sztuk pokazać na półce w zależności od ilości (czytelny zakres 1–6).
 const stackCount = (quantity) => Math.max(1, Math.min(6, Math.round(quantity / 8)));
 
-// --- Układ siatki: po MAX_ROWS półkach zaczynamy nową kolumnę, żeby lodówka
-// nie rosła w nieskończoność w górę (czytelność na mobilce). ---
 const MAX_ROWS = 6;
 
-// Oblicza rozmieszczenie produktów w kolumnach (każda kolumna = osobna sekcja
-// półek). Zwraca wymiary i pozycje, by korpus i kamera mogły się dopasować.
 function computeLayout(count) {
     const cols = Math.ceil(count / MAX_ROWS);
     const rows = Math.min(count, MAX_ROWS);
-    const colW = INNER_W;                         // szerokość jednej kolumny
-    const colGap = WALL * 2;                       // przegroda między kolumnami
+    const colW = INNER_W;
+    const colGap = WALL * 2;
     const totalW = cols * colW + (cols - 1) * colGap;
     const height = rows * SHELF_GAP + 0.4;
     const placements = [];
@@ -75,24 +67,19 @@ const toggleStyle = {
 };
 
 
-// Owija teksturę dookoła obwodu cylindra (etykieta butelki/słoika).
-// Tekstura jest powtarzana po obwodzie, więc zdjęcie obejmuje cały korpus.
 function WrapMaterial({ texture, hex, roughness = 0.4 }) {
     const map = useMemo(() => {
         if (!texture) return null;
         const t = texture.clone();
         t.wrapS = THREE.RepeatWrapping;
         t.wrapT = THREE.ClampToEdgeWrapping;
-        t.repeat.set(3, 1); // 3 powtórzenia etykiety po obwodzie
+        t.repeat.set(3, 1);
         t.needsUpdate = true;
         return t;
     }, [texture]);
     return <meshStandardMaterial map={map} color={map ? '#ffffff' : hex} roughness={roughness} metalness={0.04} />;
 }
 
-// Box z naklejoną etykietą (zdjęciem). Domyślnie tekstura tylko na froncie (+Z);
-// z `wrap` – także na bokach (±X), żeby zdjęcie obejmowało więcej powierzchni.
-// Kolejność slotów BoxGeometry: 0:+X, 1:-X, 2:+Y, 3:-Y, 4:+Z (front), 5:-Z (tył).
 function LabeledBox({ texture, hex, args, position = [0, 0, 0], wrap = false }) {
     const sideMap = wrap ? texture : null;
     return (
@@ -108,16 +95,12 @@ function LabeledBox({ texture, hex, args, position = [0, 0, 0], wrap = false }) 
     );
 }
 
-// Renderer pojedynczej CZĘŚCI bryły opisanej deklaratywnie przez strategię
-// kształtu (patrz domain/shapeStrategies.js). Zamienia opis { kind, args,
-// position, material } na konkretny mesh Three.js.
 function ShapePart({ part, texture }) {
     const { kind, args, position, material } = part;
     const geom = kind === 'box'
         ? <boxGeometry args={args} />
-        : <cylinderGeometry args={args} />; // 'cyl' i 'cone' to ten sam geometr z różnymi promieniami
+        : <cylinderGeometry args={args} />;
 
-    // Box z etykietą obsługujemy istniejącym komponentem (multi-material).
     if (kind === 'box' && material.type === 'label') {
         return <LabeledBox texture={texture} hex={material.hex} args={args} position={position} wrap={material.wrap} />;
     }
@@ -132,9 +115,6 @@ function ShapePart({ part, texture }) {
     );
 }
 
-// Bryła produktu budowana przez WZORZEC Strategy + Factory: fabryka dobiera
-// strategię po typie jednostki (`product.shape`), strategia opisuje części,
-// a `ShapePart` je renderuje. Brak `switch` – nowy kształt = nowa klasa.
 function ProductShape({ product, texture }) {
     const parts = useMemo(() => shapeFactory.create(product).buildParts(product), [product]);
     return (
@@ -146,9 +126,6 @@ function ProductShape({ product, texture }) {
     );
 }
 
-// Produkty stojące na jednej półce – rządek brył, którego długość odzwierciedla
-// aktualny stan. Klik otwiera w scenie panel +/− (bez wychodzenia z widoku 3D).
-// `visible` (drzwi otwarte) decyduje, czy produkty są w ogóle pokazywane/klikalne.
 function ProductRow({ product, y, quantity, onAdd, onTake, visible }) {
     const groupRef = useRef();
     const [hovered, setHovered] = useState(false);
@@ -167,7 +144,6 @@ function ProductRow({ product, y, quantity, onAdd, onTake, visible }) {
         groupRef.current.scale.lerp(new THREE.Vector3(target, target, target), 0.18);
     });
 
-    // Drzwi zamknięte → nic nie pokazujemy (brak brył, etykiet i interakcji).
     if (!visible) return null;
 
     return (
@@ -185,7 +161,6 @@ function ProductRow({ product, y, quantity, onAdd, onTake, visible }) {
                 ))}
             </group>
 
-            {/* Etykieta lub panel +/− po kliknięciu */}
             <Html position={[totalW / 2 + 0.22, 0.3, 0]} center distanceFactor={8} zIndexRange={[20, 0]}>
                 {open ? (
                     <div style={panelStyle(product.hex)}>
@@ -233,7 +208,6 @@ const panelStyle = (hex) => ({
 
 const panelRow = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 };
 
-// 44px = zalecany minimalny rozmiar celu dotykowego na mobilkach.
 const stepBtn = {
     width: 44, height: 44, borderRadius: '50%', border: 'none',
     background: '#18181b', color: '#fff', fontSize: 24, fontWeight: 800,
@@ -272,7 +246,6 @@ function labelStyle(hex, hovered = false) {
     };
 }
 
-// Pojedyncza półka (szklana taca) – w danej kolumnie (x).
 function Shelf({ x, y }) {
     return (
         <mesh position={[x, y, 0]} receiveShadow castShadow>
@@ -282,9 +255,6 @@ function Shelf({ x, y }) {
     );
 }
 
-// Drzwi lodówki – animowane otwieranie/zamykanie na klik, z magnesem (logo
-// samorządu) na froncie. Zawias na lewej krawędzi; drzwi otwierają się w lewo
-// (na zewnątrz, w stronę widza), odsłaniając wnętrze.
 const DOOR_OPEN = -Math.PI * 0.9;    // kąt pełnego otwarcia (prawie płasko w bok)
 const DOOR_CLOSED = 0;
 const DOOR_TH = 0.1;                  // grubość drzwi
@@ -304,29 +274,24 @@ function FridgeDoor({ height, doorW, hingeX, frontZ, open, onToggle }) {
     const skin = hovered ? '#f3f6fa' : '#fbfdff';
 
     return (
-        // zawias: lewy przedni narożnik korpusu; drzwi rozciągają się w prawo (+X)
         <group ref={ref} position={[hingeX, height / 2, frontZ]} rotation={[0, DOOR_CLOSED, 0]}>
             <group
                 onClick={(e) => { e.stopPropagation(); onToggle(); }}
                 onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
                 onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
             >
-                {/* płyta drzwi (nieprzezroczysta, jak prawdziwa lodówka) */}
                 <mesh position={[doorW / 2, 0, DOOR_TH / 2]} castShadow receiveShadow>
                     <boxGeometry args={[doorW, doorH, DOOR_TH]} />
                     <meshStandardMaterial color={skin} roughness={0.35} metalness={0.08} />
                 </mesh>
-                {/* wcięty panel na froncie – nadaje głębi */}
                 <mesh position={[doorW / 2, 0, DOOR_TH + 0.001]}>
                     <planeGeometry args={[doorW - 0.18, doorH - 0.18]} />
                     <meshStandardMaterial color="#eef2f7" roughness={0.45} />
                 </mesh>
-                {/* pionowy uchwyt przy krawędzi otwierania (po prawej, daleko od zawiasu) */}
                 <mesh position={[doorW - 0.16, 0, DOOR_TH + 0.06]} castShadow>
                     <boxGeometry args={[0.06, doorH * 0.62, 0.06]} />
                     <meshStandardMaterial color="#aeb6bf" metalness={0.85} roughness={0.25} />
                 </mesh>
-                {/* MAGNES z logo samorządu na froncie drzwi */}
                 <group position={[doorW * 0.46, height * 0.26, DOOR_TH + 0.01]}>
                     <mesh>
                         <circleGeometry args={[0.28, 48]} />
@@ -348,8 +313,6 @@ function FridgeDoor({ height, doorW, hingeX, frontZ, open, onToggle }) {
     );
 }
 
-// Korpus lodówki – zamknięte pudło (jak prawdziwa lodówka) z drzwiami z przodu.
-// Wnętrze (półki + produkty) jest wpuszczone; po zamknięciu drzwi je zasłaniają.
 function FridgeBody({ height, totalW, cols, colW, colGap, doorOpen, onToggleDoor }) {
     const half = height / 2;
     const shell = '#e9edf2';   // obudowa zewnętrzna (lekko ciepła biel)
@@ -362,40 +325,32 @@ function FridgeBody({ height, totalW, cols, colW, colGap, doorOpen, onToggleDoor
 
     return (
         <group>
-            {/* === Obudowa zewnętrzna (pełne, nieprzezroczyste ścianki) === */}
-            {/* tył */}
             <mesh position={[0, half, -INNER_D / 2 - WALL / 2]} receiveShadow castShadow>
                 <boxGeometry args={[outerW, fullH, WALL]} />
                 <meshStandardMaterial color={shell} roughness={0.55} metalness={0.06} />
             </mesh>
-            {/* lewa */}
             <mesh position={[-totalW / 2 - WALL / 2, half, 0]} receiveShadow castShadow>
                 <boxGeometry args={[WALL, fullH, depth]} />
                 <meshStandardMaterial color={shell} roughness={0.55} metalness={0.06} />
             </mesh>
-            {/* prawa */}
             <mesh position={[totalW / 2 + WALL / 2, half, 0]} receiveShadow castShadow>
                 <boxGeometry args={[WALL, fullH, depth]} />
                 <meshStandardMaterial color={shell} roughness={0.55} metalness={0.06} />
             </mesh>
-            {/* podłoga */}
             <mesh position={[0, 0, 0]} receiveShadow castShadow>
                 <boxGeometry args={[outerW, WALL, depth]} />
                 <meshStandardMaterial color={shell} roughness={0.55} metalness={0.06} />
             </mesh>
-            {/* sufit */}
             <mesh position={[0, height, 0]} receiveShadow castShadow>
                 <boxGeometry args={[outerW, WALL, depth]} />
                 <meshStandardMaterial color={shell} roughness={0.55} metalness={0.06} />
             </mesh>
 
-            {/* === Wyściółka wnętrza (jaśniejsza, matowa) === */}
             <mesh position={[0, half, -INNER_D / 2 + 0.012]} receiveShadow>
                 <boxGeometry args={[totalW, height, 0.02]} />
                 <meshStandardMaterial color={inner} roughness={0.85} />
             </mesh>
 
-            {/* przegrody między kolumnami */}
             {Array.from({ length: Math.max(0, cols - 1) }).map((_, i) => {
                 const x = -totalW / 2 + (i + 1) * colW + i * colGap + colGap / 2;
                 return (
@@ -406,18 +361,14 @@ function FridgeBody({ height, totalW, cols, colW, colGap, doorOpen, onToggleDoor
                 );
             })}
 
-            {/* === Ramka frontu wokół otworu (żeby drzwi miały do czego przylegać) === */}
-            {/* górna belka */}
             <mesh position={[0, height + WALL / 2, frontZ - WALL / 2]} castShadow>
                 <boxGeometry args={[outerW, WALL, WALL]} />
                 <meshStandardMaterial color={trim} roughness={0.5} />
             </mesh>
-            {/* dolna belka */}
             <mesh position={[0, -WALL / 2, frontZ - WALL / 2]} castShadow>
                 <boxGeometry args={[outerW, WALL, WALL]} />
                 <meshStandardMaterial color={trim} roughness={0.5} />
             </mesh>
-            {/* boczne słupki */}
             <mesh position={[-totalW / 2 - WALL / 2, half, frontZ - WALL / 2]} castShadow>
                 <boxGeometry args={[WALL, fullH, WALL]} />
                 <meshStandardMaterial color={trim} roughness={0.5} />
@@ -439,9 +390,6 @@ function FridgeBody({ height, totalW, cols, colW, colGap, doorOpen, onToggleDoor
     );
 }
 
-// Ustawia POCZĄTKOWE kadrowanie po zmianie rozmiaru sceny: pozycja kamery +
-// pivot orbity w środku lodówki (świat y=0), żeby obrót kręcił się wokół bryły.
-// Robi to raz (gdy kontrolki są już zamontowane); nie nadpisuje ruchu usera.
 function CameraRig({ height, totalW, controlsRef }) {
     const { camera, invalidate } = useThree();
     useEffect(() => {
@@ -449,9 +397,6 @@ function CameraRig({ height, totalW, controlsRef }) {
         let tries = 0;
         const frame = () => {
             const ctrls = controlsRef.current;
-            // Powtarzamy kadrowanie przez kilka klatek: przy nawigacji klient-side
-            // OrbitControls montują się z opóźnieniem, a ich wewnętrzny stan musi
-            // się ustabilizować – inaczej pierwsza klatka bywa pusta (czarna).
             if (ctrls) {
                 const span = Math.max(height, totalW * 0.9);
                 const dist = span * 1.35 + 2.8;
@@ -460,7 +405,7 @@ function CameraRig({ height, totalW, controlsRef }) {
                 camera.updateProjectionMatrix();
                 ctrls.target.set(0, 0, 0);
                 ctrls.update();
-                invalidate(); // wymuś przerysowanie
+                invalidate();
                 tries += 1;
             }
             if (tries < 5) raf = requestAnimationFrame(frame);
@@ -529,16 +474,10 @@ function Scene({ products, quantities, onAdd, onTake, doorOpen, onToggleDoor, pr
 }
 
 export default function Fridge3D({ products: rawProducts }) {
-    // Montujemy <Canvas> dopiero, gdy kontener ma realny rozmiar – inaczej przy
-    // bezpośrednim wejściu na /fridge R3F potrafi wystartować z zerowym rozmiarem
-    // i nie wyrenderować sceny (wyścig układu strony).
     const wrapRef = useRef(null);
     const [size, setSize] = useState(null);
     const [doorOpen, setDoorOpen] = useState(false); // drzwi: domyślnie zamknięte
 
-    // Produkty pokazujemy dopiero gdy drzwi zdążyły się odsłonić, a chowamy
-    // NATYCHMIAST przy zamykaniu (żeby nie prześwitywały zza zamykających się
-    // drzwi). `openedEnough` opóźnia tylko moment ODSŁONIĘCIA.
     const [openedEnough, setOpenedEnough] = useState(false);
     useEffect(() => {
         if (!doorOpen) return undefined;
@@ -547,19 +486,12 @@ export default function Fridge3D({ products: rawProducts }) {
     }, [doorOpen]);
     const productsVisible = doorOpen && openedEnough;
 
-    // Normalizacja: każdy produkt (także nowa kategoria z backendu) dostaje
-    // gwarantowane pola hex/image/shape/isPercent używane przez scenę.
     const products = useMemo(() => normalizeProducts(rawProducts), [rawProducts]);
 
-    // WZORZEC Observer: stanem ilości zarządza InventoryStore (Subject). React
-    // jest jego obserwatorem – `quantities` to migawka, którą store odświeża po
-    // każdej zmianie. Panel +/− woła metody store'a, nie modyfikuje stanu wprost.
     const store = useMemo(() => new InventoryStore(products), [products]);
     const [quantities, setQuantities] = useState(() => store.snapshot());
     useEffect(() => {
-        // subscribe od razu wypycha bieżącą migawkę (synchronizacja przy montażu)
         const unsubscribe = store.subscribe(setQuantities);
-        // drugi obserwator: alert niskiego stanu (analogiczny do sygnałów Django)
         const unsubscribeLow = store.onLowStock(({ id, quantity, minimum }) => {
             const p = products.find((x) => x.id === id);
             console.warn(`[Lodówka] Niski stan: ${p?.name ?? id} = ${quantity} (min ${minimum})`);
@@ -574,8 +506,6 @@ export default function Fridge3D({ products: rawProducts }) {
         if (!el) return;
         const update = () => {
             const r = el.getBoundingClientRect();
-            // Montujemy dopiero przy realnym rozmiarze w OBU osiach – inaczej R3F
-            // wystartuje z domyślnym 300x150 i nie przemierzy się po zmianie szerokości.
             if (r.width > 0 && r.height > 0) {
                 setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
             }
@@ -588,7 +518,6 @@ export default function Fridge3D({ products: rawProducts }) {
 
     return (
         <div ref={wrapRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-            {/* Przycisk otwierania/zamykania drzwi */}
             <button onClick={() => setDoorOpen((d) => !d)} style={toggleStyle}>
                 {doorOpen ? '🚪 Zamknij' : '❄️ Otwórz'}
             </button>

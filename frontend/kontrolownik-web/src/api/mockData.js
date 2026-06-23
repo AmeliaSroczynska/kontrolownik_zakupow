@@ -7,8 +7,7 @@ export const products = [
     { id: 6, name: 'Mleko', slug: 'mleko', quantity: 50, minimum_quantity: 20, unit: '% kartonu', color: 'bg-brand-tan', hex: '#BABABA', image: '/images/milk.png' },
 ];
 
-// The Django API exposes `unit_display`; mock data uses `unit`. Normalize so the
-// UI components can rely on the same shape whether online or offline.
+// temporary
 const toApiShape = (p) => ({ ...p, unit_display: p.unit });
 
 export const mockProducts = products.map(toApiShape);

@@ -4,8 +4,6 @@ import { ArrowLeft } from 'lucide-react';
 import Fridge3D from '../components/Fridge3D.jsx';
 import { products } from '../api/mockData.js';
 
-// Wizualizacja 3D lodówki z aktualnym stanem produktów.
-// Na razie zasilana danymi mockowymi (src/api/mockData.js).
 const FridgeView = () => {
     const navigate = useNavigate();
 

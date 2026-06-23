@@ -1,39 +1,14 @@
-/**
- * WZORZEC: Strategy (Strategia)
- * ------------------------------------------------------------------
- * Każdy typ produktu rysowany jest inną bryłą 3D. Zamiast rozgałęzionego
- * `switch (product.shape)` w komponencie, kształt jest osobną, wymienną
- * KLASĄ realizującą wspólny interfejs `ShapeStrategy`. Komponent sceny nie
- * wie, jak zbudowana jest dana bryła – pyta tylko strategię o jej opis
- * (`buildParts()`), a renderer zamienia opis na meshe Three.js.
- *
- * Dzięki temu dodanie nowego kształtu = dopisanie jednej klasy (zasada
- * otwarte/zamknięte – Open/Closed), bez modyfikacji istniejącego kodu.
- *
- * Każda część bryły to deklaratywny obiekt:
- *   { kind: 'box'|'cyl'|'cone', args, position, material }
- * material: { type: 'label'|'wrap'|'plain', hex?, role? }
- */
-
-/** Klasa bazowa (abstrakcyjna) – kontrakt wszystkich strategii kształtu. */
 export class ShapeStrategy {
-    /** @returns {string} nazwa typu kształtu (do debugowania/testów) */
     get kind() {
         return 'abstract';
     }
 
-    /**
-     * Zwraca listę części składowych bryły dla danego produktu.
-     * @param {{hex:string}} product
-     * @returns {Array<object>} deklaratywny opis części
-     */
     // eslint-disable-next-line no-unused-vars
     buildParts(product) {
         throw new Error('ShapeStrategy.buildParts() musi być nadpisane przez podklasę');
     }
 }
 
-/** Butelka: owinięty etykietą korpus + szyjka + nakrętka. */
 export class BottleShape extends ShapeStrategy {
     get kind() {
         return 'bottle';
@@ -48,7 +23,6 @@ export class BottleShape extends ShapeStrategy {
     }
 }
 
-/** Karton z daszkiem (np. mleko). */
 export class CartonShape extends ShapeStrategy {
     get kind() {
         return 'carton';
@@ -63,7 +37,6 @@ export class CartonShape extends ShapeStrategy {
     }
 }
 
-/** Słoik / puszka (np. kawa, kapsułki): owinięty korpus + wieczko. */
 export class JarShape extends ShapeStrategy {
     get kind() {
         return 'jar';
@@ -77,7 +50,6 @@ export class JarShape extends ShapeStrategy {
     }
 }
 
-/** Talia plasterków – niski, szeroki box z owinięciem. */
 export class SlicesShape extends ShapeStrategy {
     get kind() {
         return 'slices';
@@ -90,7 +62,6 @@ export class SlicesShape extends ShapeStrategy {
     }
 }
 
-/** Pudełko/paczka (np. kawałki, tosty) – domyślny kształt. */
 export class BoxShape extends ShapeStrategy {
     get kind() {
         return 'box';
