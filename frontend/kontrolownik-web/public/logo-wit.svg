@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 440 440" fill="none">
+  <rect width="440" height="440" fill="#ffffff"/>
+  <g transform="translate(220 220)">
+    <!-- Zębatka: pierścień + zęby -->
+    <g fill="#243746">
+      <circle r="150" fill="none" stroke="#243746" stroke-width="30"/>
+      <g>
+        <rect x="-20" y="-196" width="40" height="46" rx="6"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(24)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(48)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(72)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(96)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(120)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(144)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(168)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(192)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(216)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(240)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(264)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(288)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(312)"/>
+        <rect x="-20" y="-196" width="40" height="46" rx="6" transform="rotate(336)"/>
+      </g>
+    </g>
+    <!-- Czerwony symbol: dwa łuki (C) + podwójna strzałka (>>) -->
+    <g fill="none" stroke="#E2001A" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M -40 -82 A 95 95 0 1 0 -40 82"/>
+      <path d="M -16 -50 A 58 58 0 1 0 -16 50"/>
+      <polyline points="20,-70 88,0 20,70"/>
+      <polyline points="-26,-70 42,0 -26,70"/>
+    </g>
+  </g>
+</svg>

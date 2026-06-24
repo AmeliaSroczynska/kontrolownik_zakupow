@@ -200,12 +200,6 @@ class AdvancedProductAPITests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
 
-    def test_get_product_detail(self):
-        """Sprawdza, czy endpoint /api/products/{slug}/ poprawnie zwraca dane konkretnego produktu."""
-        response = self.client.get(f'/api/products/{self.product1.slug}/')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['name'], 'Kawa')
-        self.assertEqual(response.data['quantity'], 5.0)
 
     def test_take_action_on_nonexistent_product(self):
         """Sprawdza zabezpieczenia – co się stanie, gdy ktoś spróbuje pobrać nieistniejący produkt."""

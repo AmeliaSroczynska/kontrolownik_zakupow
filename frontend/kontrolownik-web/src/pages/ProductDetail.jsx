@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Minus } from 'lucide-react';
+import { fetchProduct, changeStock } from '../api/client';
 
 const colorMap = {
     'Ser': 'bg-[#F2C953]',
@@ -17,23 +18,17 @@ const ProductDetail = () => {
     const [product, setProduct] = useState(null);
 
     useEffect(() => {
-        fetch(`http://127.0.0.1:8000/api/products/${slug}/`)
-            .then(res => res.json())
-            .then(data => setProduct(data))
-            .catch(err => console.error(err));
+        fetchProduct(slug)
+            .then(setProduct)
+            .catch(() => setProduct(null));
     }, [slug]);
 
     const handleAction = async (endpoint) => {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/api/products/${slug}/${endpoint}/`, {
-                method: 'POST',
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setProduct(data);
-            }
-        } catch (err) {
-            console.error(err);
+            const data = await changeStock(slug, endpoint);
+            setProduct(data);
+        } catch {
+            setProduct(prev => prev);
         }
     };
 

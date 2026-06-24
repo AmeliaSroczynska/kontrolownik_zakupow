@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Box } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { fetchProducts } from '../api/client';
 
 const colorMap = {
     'Ser': 'bg-[#F2C953]',
@@ -15,16 +16,18 @@ const MainList = () => {
     const [products, setProducts] = useState([]);
 
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/api/products/')
-            .then(res => res.json())
-            .then(data => setProducts(data))
-            .catch(err => console.error(err));
+        fetchProducts()
+            .then(setProducts)
+            .catch(() => setProducts([]));
     }, []);
 
     return (
         <div className="w-full max-w-[360px] bg-white rounded-5xl p-6 shadow-2xl min-h-[720px] flex flex-col overflow-hidden font-sans">
             <div className="flex justify-between items-center mb-2 px-2 mt-2">
                 <img src="/logo-bird.svg" alt="logo" className="w-10 h-10" />
+                <Link to="/fridge" title="Lodówka 3D" className="text-zinc-800 active:scale-90 transition-transform">
+                    <Box size={28} strokeWidth={2.5} />
+                </Link>
                 <img src="/logo-bird.svg" alt="logo" className="w-10 h-10 scale-x-[-1]" />
             </div>
 
@@ -55,7 +58,15 @@ const MainList = () => {
                 })}
             </div>
 
-            <div className="mt-auto pb-8 flex items-center justify-center gap-1.5 text-zinc-400 text-sm font-medium">
+            <Link
+                to="/fridge"
+                className="mt-auto mx-2 mb-4 flex items-center justify-center gap-2 bg-zinc-900 text-white rounded-3xl py-4 text-lg font-extrabold shadow-lg transition-transform active:scale-95 no-underline"
+            >
+                <Box size={22} strokeWidth={2.5} />
+                <span>Zobacz lodówkę 3D</span>
+            </Link>
+
+            <div className="pb-8 flex items-center justify-center gap-1.5 text-zinc-400 text-sm font-medium">
                 <span>Made with</span>
                 <Heart size={16} className="text-[#FF3B5C] fill-[#FF3B5C]" />
                 <div className="flex items-center gap-1">
